@@ -1,0 +1,43 @@
+haskell-skylighting-core (0.8.5-deepin1) unstable; urgency=medium
+
+  * Rebuild
+
+ -- Deepin Packages Builder <packages@deepin.org>  Fri, 25 Nov 2022 14:05:12 +0800
+
+haskell-skylighting-core (0.8.5-1) unstable; urgency=medium
+
+  * New upstream release
+
+ -- Ilias Tsitsimpis <iliastsi@debian.org>  Thu, 20 Aug 2020 10:16:02 +0300
+
+haskell-skylighting-core (0.8.4-2) unstable; urgency=medium
+
+  * debian/patches/98.patch:
+    - upstream-proposed patch (from Ubuntu) to increase test timeout to avoid
+      failures on qemu-emulated environments such as Ubuntu and riscv64
+
+ -- Gianfranco Costamagna <locutusofborg@debian.org>  Mon, 01 Jun 2020 19:41:38 +0200
+
+haskell-skylighting-core (0.8.4-1) unstable; urgency=medium
+
+  * New upstream version.
+
+ -- Clint Adams <clint@debian.org>  Sat, 30 May 2020 22:40:11 -0400
+
+haskell-skylighting-core (0.7.7-1) unstable; urgency=medium
+
+  * New upstream release
+
+ -- Clint Adams <clint@debian.org>  Mon, 29 Jul 2019 16:57:54 -0400
+
+haskell-skylighting-core (0.7.5-1) unstable; urgency=medium
+
+  * New upstream release
+
+ -- Clint Adams <clint@debian.org>  Mon, 31 Dec 2018 18:10:20 -0500
+
+haskell-skylighting-core (0.7.3-1) unstable; urgency=low
+
+  * Initial release (Closes: #911543)
+
+ -- Ilias Tsitsimpis <iliastsi@debian.org>  Sun, 21 Oct 2018 19:46:49 +0300

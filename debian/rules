@@ -1,0 +1,11 @@
+#!/usr/bin/make -f
+
+DEB_ENABLE_TESTS = yes
+
+DEB_SETUP_GHC_CONFIGURE_ARGS += --flags="system-pcre"
+
+include /usr/share/cdbs/1/rules/debhelper.mk
+include /usr/share/cdbs/1/class/hlibrary.mk
+
+# Run tests under C.UTF-8.
+check-ghc-stamp: export LC_ALL := C.UTF-8

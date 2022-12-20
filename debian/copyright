@@ -1,0 +1,154 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: skylighting-core
+Upstream-Contact: John MacFarlane <jgm@berkeley.edu>
+Source: https://hackage.haskell.org/package/skylighting-core
+
+Files: *
+Copyright: (C) 2016-2018 John MacFarlane
+License: BSD-3-clause
+
+Files: debian/*
+Copyright: held by the contributors mentioned in debian/changelog
+License: BSD-3-clause
+
+Files: xml/*
+Copyright: (C) 2004,2006,2008 Wilbert Berendsen <wilbert@kde.nl>
+           (C) 2004-2005 Dominik Haumann <dhdev@gmx.de>
+           (C) 2011 Caspar Hasenclever
+           (C) 2012-2015, 2017-2018 Alex Turbov <i.zaufi@gmail.com>
+           (C) 2007-2008, 2013-2014 Matthew Woehlke <mw_triad@users.sourceforge.net>
+           (C) 2004 Alexander Neundorf <neundorf@kde.org>
+           (C) 2007-2008 Diggory Hardy <diggory.hardy@gmail.com>
+           (C) 2007 Aziz Köksal <aziz.koeksal@gmail.com>
+           (C) 2007 Jari-Matti Mäkelä <jmjm@iki.fi>
+           (C) 2004 Simon J Mackenzie <project.katedxml@smackoz.fastmail.fm>
+           (C) 2016 Boris Egorov <egorov@linux.com>
+           (C) 2014 Rubén Caro <ruben.caro.estevez@gmail.com>
+           (C) 2002 John Zaitseff
+           (C) 2010-2011 Miquel Sabaté <mikisabate@gmail.com>
+           (C) 2001 Joseph Wenninger <jowenn@kde.org>
+           (C) 2001-2004 Anders Lund <anders@alweb.dk>
+           (C) 2003 Simon Huerlimann <simon.huerlimann@access.unizh.ch>
+           (C) 2004 Jan Villat <jan.villat@net2000.ch>
+           (C) 2008 Alexey V. Beshenov <al@beshenov.ru>
+           (C) 2012 Torsten Eichstädt
+           (C) 2010 Matt Williams <matt@milliams.com>
+           (C) 2004 Sebastian Vuorinen <sebastian dot vuorinen at helsinki dot fi>
+           (C) 2004 Stefan Lang <langstefan@gmx.at>
+           (C) 2005 Chris Martin <linux@chriscodes.com>
+           (C) 2006 Richard Dale <rdale@foton.es>
+           (C) 2008 Robin Pedersen <robinpeder@gmail.com>
+           (C) 2011 Jonathan Kolberg <bulldog98@kubuntu-de.org>
+License: LGPL
+
+Files: xml/rust.xml
+Copyright: (C) 2015 The Rust Project Developers
+License: Expat
+
+Files: xml/tcl.xml xml/m4.xml
+Copyright: (C) Irsid - Arcelor Innovation R&D
+           (C) 2011 Cybernetica AS
+License: BSD-3-clause
+
+Files: xml/gnuassembler.xml xml/go.xml xml/r.xml
+Copyright: (C) 2002 John Zaitseff
+           (C) 2010 Miquel Sabaté <mikisabate@gmail.com>
+           (C) 2006 Thomas Friedrichsmeier, Arne Henningsen, and the RKWard Team
+License: GPL-2+
+
+Files: xml/markdown.xml
+Copyright: (C) 2008 Darrin Yeager
+License: GPL-2+ or BSD-3-clause
+
+License: BSD-3-clause
+ Copyright (c) 2016-2018, John MacFarlane.
+ All rights reserved.
+ .
+ Redistribution and use in source and binary forms, with or without
+ modification, are permitted provided that the following conditions are
+ met:
+ .
+     * Redistributions of source code must retain the above copyright
+       notice, this list of conditions and the following disclaimer.
+ .
+     * Redistributions in binary form must reproduce the above
+       copyright notice, this list of conditions and the following
+       disclaimer in the documentation and/or other materials provided
+       with the distribution.
+ .
+     * The names of the contributors may not be used to endorse or
+       promote products derived from this software without specific
+       prior written permission.
+ .
+ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+License: LGPL
+ This library is free software; you can redistribute it and/or
+ modify it under the terms of the GNU Lesser General Public
+ License as published by the Free Software Foundation; either
+ version 2.1 of the License, or (at your option) any later version.
+ .
+ This library is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ Lesser General Public License for more details.
+ .
+ You should have received a copy of the GNU Lesser General Public
+ License along with this library; if not, write to the Free Software
+ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ .
+ The full text of the license is included with this program in the file
+ `/usr/share/common-licenses/LGPL-2.1`.
+
+License: Expat
+ Permission is hereby granted, free of charge, to any
+ person obtaining a copy of this software and associated
+ documentation files (the "Software"), to deal in the
+ Software without restriction, including without
+ limitation the rights to use, copy, modify, merge,
+ publish, distribute, sublicense, and/or sell copies of
+ the Software, and to permit persons to whom the Software
+ is furnished to do so, subject to the following
+ conditions:
+ .
+ The above copyright notice and this permission notice
+ shall be included in all copies or substantial portions
+ of the Software.
+ .
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
+ ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
+ TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+ PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
+ SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+ CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
+ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+ DEALINGS IN THE SOFTWARE.
+
+License: GPL-2+
+ This package is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation; either version 2 of the License, or
+ (at your option) any later version.
+ .
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+ .
+ You should have received a copy of the GNU General Public License along
+ with this program; if not, write to the Free Software Foundation, Inc.,
+ 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ .
+ On Debian systems, a copy of the GNU General Public License version 2
+ can be found in '/usr/share/common-licenses/GPL-2'.
