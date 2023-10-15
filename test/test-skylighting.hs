@@ -3,15 +3,18 @@
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 module Main where
-import qualified Control.Exception as E
+import Data.Maybe
 import Data.Aeson (decode, encode)
 import Data.Algorithm.Diff
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.Map as Map
-import Data.Monoid ((<>))
+#if !MIN_VERSION_base(4,11,0)
+import Data.Semigroup ((<>), Semigroup)
+#endif
 import Data.Text (Text)
 import qualified Data.Text as Text
 import qualified Data.Text.IO as Text
+import qualified Data.Text.Encoding as TE
 import System.Directory
 import System.Environment (getArgs)
 import System.FilePath
@@ -23,7 +26,7 @@ import Test.Tasty.Golden.Advanced (goldenTest)
 import Test.Tasty.HUnit
 import Test.Tasty.QuickCheck (testProperty)
 import Text.Show.Pretty
-
+import GHC.IO.Encoding (setLocaleEncoding)
 import Skylighting.Core
 
 readTextFile :: FilePath -> IO Text
@@ -40,6 +43,7 @@ xmlPath = "xml/"
 
 main :: IO ()
 main = do
+  setLocaleEncoding utf8
   sMap <- do
       result <- loadSyntaxesFromDir xmlPath
       case result of
@@ -52,7 +56,10 @@ main = do
       defConfig = TokenizerConfig { traceOutput = False
                                   , syntaxMap = sMap
                                   }
-
+  let getMatchers = map rMatcher .  concatMap cRules . sContexts
+  let getRegexFromMatcher (RegExpr re) = Just $ reString re
+      getRegexFromMatcher _ = Nothing
+  let getRegexesFromSyntax = mapMaybe getRegexFromMatcher . getMatchers
   inputs <- filter (\fp -> take 1 fp /= ".")
          <$> getDirectoryContents ("test" </> "cases")
   allcases <- mapM (fmap (Text.take 240)
@@ -78,11 +85,6 @@ main = do
        , testCase "round trip style -> theme -> style" $
             Just kate @=? decode (encode kate)
        ]
-    , testGroup "Skylighting.Regex" $
-      [ testCase "convertOctalEscapes" $
-            "a\\700b\\700c\\x{800}" @=?
-              convertOctalEscapes "a\\700b\\0700c\\o{4000}"
-      ]
     , testGroup "Skylighting" $
       [ testCase "syntaxesByFilename" $
             ["Perl"] @=?
@@ -93,60 +95,71 @@ main = do
     , testGroup "Doesn't hang or drop text on fuzz" $
         map (\syn -> testProperty (Text.unpack (sName syn)) (p_no_drop defConfig syn))
         syntaxes
+    , testGroup "All regexes compile" $
+        map
+           (\syn -> testGroup ("syntax " <> sFilename syn)
+            (map
+              (\regex ->
+                testCase ("regex " <>
+                           (Text.unpack $ TE.decodeUtf8 regex) <> " in "
+                           <> sFilename syn)
+             $ case compileRegex True regex of
+                 Right _ -> assertBool "regex does not compile" True
+                 Left e -> assertFailure ("regex does not compile: " <> show e))
+                         $ getRegexesFromSyntax syn))
+        syntaxes
+    , testGroup "Regex module" $ map regexTest regexTests
     , testGroup "Regression tests" $
       let perl = maybe (error "could not find Perl syntax") id
                              (lookupSyntax "Perl" sMap)
+          html = maybe (error "could not find HTML syntax") id
+                             (lookupSyntax "html" sMap)
           cpp  = maybe (error "could not find CPP syntax") id
                              (lookupSyntax "cpp" sMap)
+          bash  = maybe (error "could not find bash syntax") id
+                             (lookupSyntax "bash" sMap)
           c    = maybe (error "could not find C syntax") id
                              (lookupSyntax "c" sMap) in
       [ testCase "perl NUL case" $ Right
-             [[(KeywordTok,"s\NUL")
-              ,(OtherTok,"b")
-              ,(KeywordTok,"\NUL")
+             [[(OtherTok,"s\NULb\NUL")
               ,(StringTok,"c")
-              ,(KeywordTok,"\NUL")]]
+              ,(OtherTok,"\NUL")]]
              @=? tokenize defConfig perl "s\0b\0c\0"
       , testCase "perl backslash case 1" $ Right
-          [ [ ( KeywordTok , "m\\" )
-            , ( OtherTok , "'" ) ]
-          ] @=? tokenize defConfig perl
+          [[(OtherTok,"m\\'")]]
+            @=? tokenize defConfig perl
                      "m\\'"
       , testCase "perl backslash case 2" $ Right
-          [ [ ( KeywordTok , "m\\" )
-            , ( OtherTok , "a" )
-            , ( KeywordTok , "\\" ) ]
-          ] @=? tokenize defConfig perl
+          [[(OtherTok,"m\\a\\")]]
+            @=? tokenize defConfig perl
                      "m\\a\\"
       , testCase "perl quoting case" $ Right
-           [ [ ( KeywordTok , "my" )
-              , ( NormalTok , " " )
-              , ( DataTypeTok , "$foo" )
-              , ( NormalTok , " = " )
-              , ( KeywordTok , "q/" )
-              , ( StringTok , "bar" )
-              , ( KeywordTok , "/" )
-              , ( NormalTok , ";" )
-              ]
-            , [ ( KeywordTok , "my" )
-              , ( NormalTok , " " )
-              , ( DataTypeTok , "$baz" )
-              , ( NormalTok , " = " )
-              , ( KeywordTok , "'" )
-              , ( StringTok , "quux" )
-              , ( KeywordTok , "'" )
-              , ( NormalTok , ";" )
-              ]
-            ] @=? tokenize defConfig perl
+          [[(KeywordTok,"my")
+           ,(NormalTok," ")
+           ,(DataTypeTok,"$foo")
+           ,(NormalTok," = ")
+           ,(OtherTok,"q/")
+           ,(SpecialStringTok,"bar")
+           ,(OtherTok,"/")
+           ,(NormalTok,";")]
+          ,[(KeywordTok,"my")
+           ,(NormalTok," ")
+           ,(DataTypeTok,"$baz")
+           ,(NormalTok," = ")
+           ,(OtherTok,"'")
+           ,(SpecialStringTok,"quux")
+           ,(OtherTok,"'")
+           ,(NormalTok,";")]]
+             @=? tokenize defConfig perl
                      "my $foo = q/bar/;\nmy $baz = 'quux';\n"
       , testCase "cpp floats" $ Right
            [ [ (FloatTok,"0.1") , (BuiltInTok,"f")]
            , [ (FloatTok,"1.0") , (BuiltInTok,"f")]
-           , [ (NormalTok,"-") , (FloatTok,"0.1") , (BuiltInTok,"f")]
-           , [ (NormalTok,"-") , (FloatTok,"1.0") , (BuiltInTok,"F")]
-           , [ (NormalTok,"-") , (FloatTok,"1.0") , (BuiltInTok,"L")]
+           , [ (OperatorTok,"-") , (FloatTok,"0.1") , (BuiltInTok,"f")]
+           , [ (OperatorTok,"-") , (FloatTok,"1.0") , (BuiltInTok,"F")]
+           , [ (OperatorTok,"-") , (FloatTok,"1.0") , (BuiltInTok,"L")]
            , [ (FloatTok,"1e3")]
-           , [ (NormalTok,"-") , (FloatTok,"15e+3")]
+           , [ (OperatorTok,"-") , (FloatTok,"15e+3")]
            , [ (FloatTok,"0.") , (BuiltInTok,"f")]
            , [ (FloatTok,"1.") , (BuiltInTok,"F")]
            , [ (FloatTok,"1.E3")]
@@ -163,6 +176,24 @@ main = do
       , testCase "c very long integer (#81)" $ Right
            [ [ (DecValTok, "1111111111111111111111") ]
            ] @=? tokenize defConfig c "1111111111111111111111"
+
+      , testCase "Chinese characters in HTML (#110)" $ Right
+          [ [ ( NormalTok , "\35797\65306" ) , ( KeywordTok , "<a>" ) ]
+          ] @=? tokenize defConfig html "试：<a>"
+
+      , testCase "Bash closing brace (#119)" $ Right
+          [ [ ( FunctionTok , "f()" )
+            , ( NormalTok , " " )
+            , ( KeywordTok , "{" ) ]
+          , [ ( NormalTok , "    " )
+            , ( BuiltInTok , "echo" )
+            , ( NormalTok , " " )
+            , ( OperatorTok , ">" )
+            , ( NormalTok , " f" ) ]
+          , [ ( KeywordTok , "}" ) ] ]
+             @=? tokenize defConfig bash
+                     "f() {\n    echo > f\n}\n"
+
       ]
     ]
 
@@ -193,24 +224,21 @@ p_no_drop cfg syntax t =
 
 noDropTest :: TokenizerConfig -> [Text] -> Syntax -> TestTree
 noDropTest cfg inps syntax =
-  localOption (mkTimeout 15000000)
+  localOption (mkTimeout 25000000)
   $ testCase (Text.unpack (sName syntax))
   $ mapM_ go inps
     where go inp =
-            E.catch
-              (case tokenize cfg syntax inp of
+              case tokenize cfg syntax inp of
                     Right ts -> assertBool ("Text has been dropped:\n" ++ diffs)
                                  (inplines == toklines)
                          where inplines = Text.lines inp
                                toklines = map (mconcat . map tokToText) ts
                                diffs = makeDiff "expected" inplines toklines
                     Left  e  ->
-                      assertFailure ("Unexpected error: " ++ e ++ "\ninput = " ++ show inp))
-              (\(e :: RegexException) ->
-                assertFailure (show e ++ "\ninput = " ++ show inp))
+                      assertFailure ("Unexpected error: " ++ e ++ "\ninput = " ++ show inp)
 
 tokenizerTest :: TokenizerConfig -> SyntaxMap -> Bool -> FilePath -> TestTree
-tokenizerTest cfg sMap regen inpFile = localOption (mkTimeout 15000000) $
+tokenizerTest cfg sMap regen inpFile = localOption (mkTimeout 25000000) $
   goldenTest testname getExpected getActual
       (compareValues referenceFile) updateGolden
   where testname = lang ++ " tokenizing of " ++ inpFile
@@ -231,6 +259,80 @@ tokenizerTest cfg sMap regen inpFile = localOption (mkTimeout 15000000) $
         casesdir = "test" </> "cases"
         referenceFile = expecteddir </> inpFile <.> "native"
         lang = drop 1 $ takeExtension inpFile
+
+regexTest :: (String, String, Maybe (String, [(Int,String)])) -> TestTree
+regexTest (re, inp, expected) =
+  testCase ("/" ++ re ++ "/ " ++ inp) $
+    expected @=? testRegex True re inp
+
+regexTests :: [(String, String, Maybe (String, [(Int,String)]))]
+regexTests =
+  [ (".", "aab", Just ("a", []))
+  , ("ab", "aab", Nothing)
+  , ("ab", "abb", Just ("ab", []))
+  , ("a{2}b", "aaab", Nothing)
+  , ("a{2,}b", "aaab", Just ("aaab", []))
+  , ("a{2,3}b", "aab", Just ("aab", []))
+  , ("a{2,3}b", "aaab", Just ("aaab", []))
+  , ("a(b)", "abb", Just ("ab", [(1,"b")]))
+  , ("a(b.)*", "abbbcb", Just ("abbbc", [(1,"bc")]))
+  , ("a(?:b.)*", "abbbcb", Just ("abbbc", []))
+  , ("a(?=b)", "abb", Just ("a", []))
+  , ("a(?=b)", "acb", Nothing)
+  , ("a(?!b)", "abb", Nothing)
+  , ("a(?!b)", "acb", Just ("a", []))
+  , ("a?b+", "bbb", Just ("bbb", []))
+  , ("a?b+", "abbb", Just ("abbb", []))
+  , ("a?b+", "ac", Nothing)
+  , ("a*", "bbb", Just ("", []))
+  , ("abc|ab$", "ab", Just ("ab", []))
+  , ("abc|ab$", "abcd", Just ("abc", []))
+  , ("abc|ab$", "abd", Nothing)
+  , ("[\\x50-\\x51]*", "PQR", Just ("PQ", []))
+  , ("[\\x{2019}]*", "\x2019PQR", Just ("\x2019", []))
+  , ("(?:ab)*|a.*", "abababa", Just ("abababa", []))
+  , ("a[b-e]*", "abcdefg", Just ("abcde", []))
+  , ("a[b-e\\n-]*", "abcde\nb-bcfg", Just ("abcde\nb-bc", []))
+  , ("^\\s+\\S+\\s+$", "   abc  ", Just ("   abc  ", []))
+  , ("\\$", "$$", Just ("$", []))
+  , ("[\\z12bb]", "\x12bb", Just ("\x12bb", []))
+  , ("[\\p{Lu}\\p{Ll}]*", "Σφa1B", Just ("Σφa", []))
+  , ("\\bhello\\b|hell", "hello there", Just ("hello", []))
+  , ("\\bhello\\b|hell", "hellothere", Just ("hell", []))
+  , ("[[:space:]]{2,4}.", "  abc", Just ("  a", []))
+  , ("[[:space:]]{2,4}.", " abc", Nothing)
+  , ("[[:space:]]{2,4}.", "     abc", Just ("     ", []))
+  , ("((..)\\+\\2)", "aa+aabb+bbbc+cb",
+          Just ("aa+aa", [(1,"aa+aa"), (2,"aa")]))
+  , ("(\\d+)/(\\d+) == \\{1}", "22/2 == 22",
+         Just ("22/2 == 22", [(1,"22"), (2,"2")]))
+  , ("([a-z]+){2}", "htabc", Just ("htabc", [(1,"c")]))
+  , ("((.+)(.+)(.+))*", (replicate 400 'a'),
+          Just (replicate 400 'a',
+                 [(1, replicate 400 'a')
+                 ,(2,replicate 398 'a')
+                 ,(3,"a")
+                 ,(4,"a")]))
+  , ("a++a", "aaaaa", Nothing)
+  , ("\\w+e", "aaaeeee", Just ("aaaeeee", []))
+  , ("\\w+?e", "aaaeeee", Just ("aaae", []))
+  , ("a+b??", "aaab", Just ("aaa", []))
+  , ("\\([a-z]+(?R)*\\)", "(aa(b(c)(d)))", Just ("(aa(b(c)(d)))", []))
+  , ("a{}", "aaa", Nothing)
+  , ("a{}", "a{}", Just ("a{}", []))
+  , ("a{3", "a{3", Just ("a{3", []))
+  , ("(?|(abc)|(def))", "abc", Just ("abc", [(1,"abc")]))
+  , ("(?|(abc)|(def))", "def", Just ("def", [(1,"def")]))
+  , ("(?:(abc)|(def))", "def", Just ("def", [(2,"def")]))
+  , ("d(?=(bc)|(ef))", "def", Just ("d", [(2,"ef")]))
+  , ("([bcd])([efg])(?2)(?1)", "befd", Just ("befd", [(1,"b"),(2,"e")]))
+  , ("([abc](?1)*)", "abcd", Just ("abc", [(1,"abc")]))
+  , ("(x(?1)*)", "xxxxy", Just ("xxxx", [(1,"xxxx")]))
+  , ("a|\\((?0)\\)", "(((a)))", Just ("(((a)))", []))
+  , ("([abc](x(?1))*)", "axbxcc", Just ("axbxc", [(1,"axbxc"),(2,"xc")]))
+    -- note: pcre gives insetad (2, "xbxc") -- I don't understand why
+  ]
+
 
 vividize :: Diff Text -> Text
 vividize (Both s _) = "  " <> s

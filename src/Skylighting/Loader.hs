@@ -7,12 +7,14 @@ module Skylighting.Loader ( loadSyntaxFromFile
                           where
 
 import Control.Monad (filterM, foldM)
-import Control.Monad.Except (ExceptT(ExceptT), runExceptT)
+import Control.Monad.Trans.Except (ExceptT(ExceptT), runExceptT)
 import Control.Monad.IO.Class (liftIO)
 import System.Directory (listDirectory, doesFileExist)
 import System.FilePath ((</>), takeExtension)
 import Skylighting.Types (SyntaxMap, Syntax)
-import Skylighting.Parser (addSyntaxDefinition, parseSyntaxDefinition)
+import Skylighting.Parser (addSyntaxDefinition, parseSyntaxDefinition,
+                           resolveKeywords)
+import qualified Data.Map as M
 #if !MIN_VERSION_base(4,11,0)
 import Data.Semigroup
 #endif
@@ -23,7 +25,7 @@ syntaxFileExtension = ".xml"
 isSyntaxFile :: FilePath -> Bool
 isSyntaxFile = (== syntaxFileExtension) . takeExtension
 
--- | Loads a syntax definition from the specifed file path. The file
+-- | Loads a syntax definition from the specified file path. The file
 -- path must refer to a file containing an XML Kate syntax definition.
 loadSyntaxFromFile :: FilePath -> IO (Either String Syntax)
 loadSyntaxFromFile path = do
@@ -44,7 +46,8 @@ loadSyntaxesFromDir path = runExceptT $ do
             s <- ExceptT $ loadSyntaxFromFile file
             return $ addSyntaxDefinition s sMap
 
-    foldM loadSyntax mempty files
+    sm <- foldM loadSyntax mempty files
+    return $ M.map (resolveKeywords sm) sm
 
 syntaxFiles :: FilePath -> IO [FilePath]
 syntaxFiles dir = do

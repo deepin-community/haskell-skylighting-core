@@ -1,8 +1,16 @@
-haskell-skylighting-core (0.8.5-deepin1) unstable; urgency=medium
+haskell-skylighting-core (0.12.3.1-2) unstable; urgency=medium
 
-  * Rebuild
+  * Increase test timeout to fix FTBFS on some architectures.
+    Thanks to Adrian Bunk for the patch.
 
- -- Deepin Packages Builder <packages@deepin.org>  Fri, 25 Nov 2022 14:05:12 +0800
+ -- Ilias Tsitsimpis <iliastsi@debian.org>  Sat, 03 Sep 2022 15:34:11 +0300
+
+haskell-skylighting-core (0.12.3.1-1) unstable; urgency=medium
+
+  * Declare compliance with Debian policy 4.6.1
+  * New upstream release
+
+ -- Ilias Tsitsimpis <iliastsi@debian.org>  Wed, 27 Jul 2022 15:28:36 +0300
 
 haskell-skylighting-core (0.8.5-1) unstable; urgency=medium
 
