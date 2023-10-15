@@ -1,23 +1,24 @@
 [ [ ( KeywordTok , "function" )
-  , ( NormalTok , " abc (str" )
-  , ( OperatorTok , "," )
-  , ( NormalTok , " list)" )
-  ]
-, [ ( NormalTok , "  isempty(str) " )
-  , ( OperatorTok , "&&" )
-  , ( NormalTok , " " )
-  , ( KeywordTok , "return" )
-  , ( NormalTok , " " )
-  , ( ExtensionTok , "true" )
+  , ( NormalTok , " abc (str, list)" )
   ]
 , [ ( NormalTok , "  " )
-  , ( KeywordTok , "for" )
+  , ( FunctionTok , "isempty" )
+  , ( NormalTok , "(str) " )
+  , ( OperatorTok , "&&" )
+  , ( NormalTok , " " )
+  , ( ControlFlowTok , "return" )
+  , ( NormalTok , " " )
+  , ( ConstantTok , "true" )
+  ]
+, [ ( NormalTok , "  " )
+  , ( ControlFlowTok , "for" )
   , ( NormalTok , " i " )
   , ( OperatorTok , "=" )
   , ( NormalTok , " " )
   , ( FloatTok , "1" )
   , ( OperatorTok , ":" )
-  , ( NormalTok , "length(list)" )
+  , ( FunctionTok , "length" )
+  , ( NormalTok , "(list)" )
   ]
 , [ ( NormalTok , "    str[" )
   , ( KeywordTok , "end" )
@@ -27,27 +28,29 @@
   , ( OperatorTok , "&&" )
   , ( NormalTok , " " )
   ]
-, [ ( NormalTok , "    any([abc(str[" )
+, [ ( NormalTok , "    " )
+  , ( FunctionTok , "any" )
+  , ( NormalTok , "([" )
+  , ( FunctionTok , "abc" )
+  , ( NormalTok , "(str[" )
   , ( FloatTok , "1" )
   , ( OperatorTok , ":" )
   , ( KeywordTok , "end" )
   , ( OperatorTok , "-" )
   , ( FloatTok , "1" )
-  , ( NormalTok , "]" )
-  , ( OperatorTok , "," )
-  , ( NormalTok , " deleteat" )
-  , ( OperatorTok , "!" )
-  , ( NormalTok , "(copy(list)" )
-  , ( OperatorTok , "," )
-  , ( NormalTok , " i))]) " )
+  , ( NormalTok , "], " )
+  , ( FunctionTok , "deleteat!" )
+  , ( NormalTok , "(" )
+  , ( FunctionTok , "copy" )
+  , ( NormalTok , "(list), i))]) " )
   , ( OperatorTok , "&&" )
   ]
 , [ ( NormalTok , "    " )
-  , ( KeywordTok , "return" )
+  , ( ControlFlowTok , "return" )
   , ( NormalTok , " " )
-  , ( ExtensionTok , "true" )
+  , ( ConstantTok , "true" )
   ]
-, [ ( NormalTok , "  " ) , ( KeywordTok , "end" ) ]
-, [ ( NormalTok , "  " ) , ( ExtensionTok , "false" ) ]
+, [ ( NormalTok , "  " ) , ( ControlFlowTok , "end" ) ]
+, [ ( NormalTok , "  " ) , ( ConstantTok , "false" ) ]
 , [ ( KeywordTok , "end" ) ]
 ]

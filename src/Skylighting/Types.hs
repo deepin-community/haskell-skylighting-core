@@ -1,3 +1,5 @@
+{-# LANGUAGE StrictData                 #-}
+{-# LANGUAGE BangPatterns               #-}
 {-# LANGUAGE DeriveDataTypeable         #-}
 {-# LANGUAGE DeriveGeneric              #-}
 {-# LANGUAGE FlexibleInstances          #-}
@@ -14,6 +16,7 @@ module Skylighting.Types (
               , WordSet(..)
               , makeWordSet
               , inWordSet
+              , ListItem(..)
               , Matcher(..)
               , Rule(..)
               , Context(..)
@@ -70,16 +73,16 @@ type ContextName = (Text, Text)
 
 -- | Attributes controlling how keywords are interpreted.
 data KeywordAttr =
-  KeywordAttr  { keywordCaseSensitive :: Bool
-               , keywordDelims        :: Set.Set Char
+  KeywordAttr  { keywordCaseSensitive :: !Bool
+               , keywordDelims        :: !(Set.Set Char)
                }
   deriving (Show, Read, Eq, Ord, Data, Typeable, Generic)
 
 instance Binary KeywordAttr
 
 -- | A set of "words," possibly case insensitive.
-data WordSet a = CaseSensitiveWords (Set.Set a)
-               | CaseInsensitiveWords (Set.Set a)
+data WordSet a = CaseSensitiveWords !(Set.Set a)
+               | CaseInsensitiveWords !(Set.Set a)
      deriving (Show, Read, Eq, Ord, Data, Typeable, Generic)
 
 instance Binary a => Binary (WordSet a)
@@ -96,14 +99,15 @@ inWordSet w (CaseSensitiveWords ws)   = w `Set.member` ws
 
 -- | Matchers correspond to the element types in a context.
 data Matcher =
-    DetectChar Char
-  | Detect2Chars Char Char
-  | AnyChar [Char]
-  | RangeDetect Char Char
-  | StringDetect Text
-  | WordDetect Text
-  | RegExpr RE
-  | Keyword KeywordAttr (WordSet Text)
+    DetectChar !Char
+  | Detect2Chars !Char !Char
+  | AnyChar !(Set.Set Char)
+  | RangeDetect !Char !Char
+  | StringDetect !Text
+  | WordDetect !Text
+  | RegExpr !RE
+  | Keyword !KeywordAttr (Either Text (WordSet Text))
+      -- Either Left list name (unresolved) or Right wordset (resolved)
   | Int
   | Float
   | HlCOct
@@ -111,7 +115,7 @@ data Matcher =
   | HlCStringChar
   | HlCChar
   | LineContinue
-  | IncludeRules ContextName
+  | IncludeRules !ContextName
   | DetectSpaces
   | DetectIdentifier
   deriving (Show, Read, Eq, Ord, Data, Typeable, Generic)
@@ -120,7 +124,7 @@ instance Binary Matcher
 
 -- | A context switch, either pops or pushes a context.
 data ContextSwitch =
-  Pop | Push ContextName
+  Pop | Push !ContextName
   deriving (Show, Read, Eq, Ord, Data, Typeable, Generic)
 
 instance Binary ContextSwitch
@@ -128,32 +132,40 @@ instance Binary ContextSwitch
 -- | A rule corresponds to one of the elements of a Kate syntax
 -- highlighting "context."
 data Rule = Rule{
-    rMatcher          :: Matcher
-  , rAttribute        :: TokenType
-  , rIncludeAttribute :: Bool
-  , rDynamic          :: Bool
-  , rCaseSensitive    :: Bool
-  , rChildren         :: [Rule]
-  , rLookahead        :: Bool
-  , rFirstNonspace    :: Bool
-  , rColumn           :: Maybe Int
-  , rContextSwitch    :: [ContextSwitch]
+    rMatcher          :: !Matcher
+  , rAttribute        :: !TokenType
+  , rIncludeAttribute :: !Bool
+  , rDynamic          :: !Bool
+  , rCaseSensitive    :: !Bool
+  , rChildren         :: ![Rule]
+  , rLookahead        :: !Bool
+  , rFirstNonspace    :: !Bool
+  , rColumn           :: !(Maybe Int)
+  , rContextSwitch    :: ![ContextSwitch]
   } deriving (Show, Read, Eq, Ord, Data, Typeable, Generic)
 
 instance Binary Rule
 
+-- | A list item is either just a textual value or an included list.
+-- IncludeList (x,y) includes list y from syntax with full name x.
+data ListItem = Item !Text | IncludeList !(Text, Text)
+  deriving (Show, Eq, Ord, Read, Data, Typeable, Generic)
+
+instance Binary ListItem
+
 -- | A syntax corresponds to a complete Kate syntax description.
 -- The 'sShortname' field is derived from the filename.
 data Syntax = Syntax{
-    sName            :: Text
-  , sFilename        :: String
-  , sShortname       :: Text
-  , sContexts        :: Map.Map Text Context
-  , sAuthor          :: Text
-  , sVersion         :: Text
-  , sLicense         :: Text
-  , sExtensions      :: [String]
-  , sStartingContext :: Text
+    sName            :: !Text
+  , sFilename        :: !String
+  , sShortname       :: !Text
+  , sLists           :: !(Map.Map Text [ListItem])
+  , sContexts        :: !(Map.Map Text Context)
+  , sAuthor          :: !Text
+  , sVersion         :: !Text
+  , sLicense         :: !Text
+  , sExtensions      :: ![String]
+  , sStartingContext :: !Text
   } deriving (Show, Read, Eq, Ord, Data, Typeable, Generic)
 
 instance Binary Syntax
@@ -164,16 +176,16 @@ type SyntaxMap = Map.Map Text Syntax
 -- | A Context corresponds to a context element in a Kate
 -- syntax description.
 data Context = Context{
-    cName               :: Text
-  , cSyntax             :: Text
-  , cRules              :: [Rule]
-  , cAttribute          :: TokenType
-  , cLineEmptyContext   :: [ContextSwitch]
-  , cLineEndContext     :: [ContextSwitch]
-  , cLineBeginContext   :: [ContextSwitch]
-  , cFallthrough        :: Bool
-  , cFallthroughContext :: [ContextSwitch]
-  , cDynamic            :: Bool
+    cName               :: !Text
+  , cSyntax             :: !Text
+  , cRules              :: ![Rule]
+  , cAttribute          :: !TokenType
+  , cLineEmptyContext   :: ![ContextSwitch]
+  , cLineEndContext     :: ![ContextSwitch]
+  , cLineBeginContext   :: ![ContextSwitch]
+  , cFallthrough        :: !Bool
+  , cFallthroughContext :: ![ContextSwitch]
+  , cDynamic            :: !Bool
 } deriving (Show, Read, Eq, Ord, Data, Typeable, Generic)
 
 instance Binary Context
@@ -247,11 +259,11 @@ newtype LineNo = LineNo { lineNo :: Int } deriving (Show, Enum)
 
 -- | A 'TokenStyle' determines how a token is to be rendered.
 data TokenStyle = TokenStyle {
-    tokenColor      :: Maybe Color
-  , tokenBackground :: Maybe Color
-  , tokenBold       :: Bool
-  , tokenItalic     :: Bool
-  , tokenUnderline  :: Bool
+    tokenColor      :: !(Maybe Color)
+  , tokenBackground :: !(Maybe Color)
+  , tokenBold       :: !Bool
+  , tokenItalic     :: !Bool
+  , tokenUnderline  :: !Bool
   } deriving (Show, Read, Ord, Eq, Data, Typeable, Generic)
 
 instance Binary TokenStyle
@@ -289,7 +301,7 @@ defStyle = TokenStyle {
   , tokenUnderline  = False
   }
 
--- | A color (red/green/blue).
+-- | A color (red, green, blue).
 data Color = RGB Word8 Word8 Word8
   deriving (Show, Read, Ord, Eq, Data, Typeable, Generic)
 
@@ -616,7 +628,7 @@ ansi256ColorList = [ (Xterm256ColorCode 232, RGB 8 8 8) -- grayscale colors
 instance ToColor Xterm256ColorCode where
     toColor = flip lookup ansi256ColorList -- cannot actually fail
 
--- | JSON @"#1aff2b" corresponds to the color @RGB 0x1a 0xff 0x2b@.
+-- | JSON @"#1aff2b"@ corresponds to the color @RGB 0x1a 0xff 0x2b@.
 instance FromJSON Color where
   parseJSON (String t) = maybe mempty return $ toColor (Text.unpack t)
   parseJSON _          = mempty
@@ -665,11 +677,11 @@ findApproximateColor acs c = let ranked = map (\ac -> (ac, colorDistance c $ snd
 -- color for normal tokens.  Line numbers can have a different
 -- color and background color.
 data Style = Style {
-    tokenStyles               :: Map.Map TokenType TokenStyle
-  , defaultColor              :: Maybe Color
-  , backgroundColor           :: Maybe Color
-  , lineNumberColor           :: Maybe Color
-  , lineNumberBackgroundColor :: Maybe Color
+    tokenStyles               :: !(Map.Map TokenType TokenStyle)
+  , defaultColor              :: !(Maybe Color)
+  , backgroundColor           :: !(Maybe Color)
+  , lineNumberColor           :: !(Maybe Color)
+  , lineNumberBackgroundColor :: !(Maybe Color)
   } deriving (Read, Show, Eq, Ord, Data, Typeable, Generic)
 
 instance Binary Style
@@ -720,14 +732,14 @@ instance Binary ANSIColorLevel
 
 -- | Options for formatting source code.
 data FormatOptions = FormatOptions{
-         numberLines      :: Bool           -- ^ Number lines
-       , startNumber      :: Int            -- ^ Number of first line
-       , lineAnchors      :: Bool           -- ^ Anchors on each line number
-       , titleAttributes  :: Bool           -- ^ Html titles with token types
-       , codeClasses      :: [Text]         -- ^ Additional classes for Html code tag
-       , containerClasses :: [Text]         -- ^ Additional classes for Html container tag
-       , lineIdPrefix     :: Text           -- ^ Prefix for id attributes on lines
-       , ansiColorLevel   :: ANSIColorLevel -- ^ Level of ANSI color support to use
+         numberLines      :: !Bool           -- ^ Number lines
+       , startNumber      :: !Int            -- ^ Number of first line
+       , lineAnchors      :: !Bool           -- ^ Anchors on each line number
+       , titleAttributes  :: !Bool           -- ^ Html titles with token types
+       , codeClasses      :: ![Text]         -- ^ Additional classes for Html code tag
+       , containerClasses :: ![Text]         -- ^ Additional classes for Html container tag
+       , lineIdPrefix     :: !Text           -- ^ Prefix for id attributes on lines
+       , ansiColorLevel   :: !ANSIColorLevel -- ^ Level of ANSI color support to use
        } deriving (Show, Read, Eq, Ord, Data, Typeable, Generic)
 
 instance Binary FormatOptions
